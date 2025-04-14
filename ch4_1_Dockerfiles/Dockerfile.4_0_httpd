@@ -1,0 +1,26 @@
+FROM registry.access.redhat.com/ubi9/ubi:9.2-489
+
+# install httpd
+RUN yum install -y httpd && yum clean all
+
+COPY index.html /var/www/html/
+
+LABEL io.openshift.expose-services="8080:http" \
+        io.k8s.description="Platform for serving static HTML files" \
+        io.k8s.display-name="Apache 2.4" \
+        io.openshift.tags="builder,html,apache"
+
+# httpd.conf 파일 수정 Listen 80을 Listen 8080으로 변경
+RUN sed -i -e 's/^Listen 80/Listen 8080/g' /etc/httpd/conf/httpd.conf 
+
+# 디렉터리에 대해 그룹 ID를 0(root)으로 변경하고, 그룹의 사용자에게 읽기 및 쓰기 권한을 부여
+RUN chgrp -R 0 /var/log/httpd /var/run/httpd /etc/httpd/logs && \ 
+    chmod -R g=u /var/log/httpd /var/run/httpd /etc/httpd/logs
+
+
+EXPOSE 8080
+ 
+USER 1001
+
+# Apache HTTP 서버를 백그라운드에서 실행하는 엔트리포인트를 설정
+ENTRYPOINT ["/usr/sbin/httpd", "-D", "FOREGROUND"]

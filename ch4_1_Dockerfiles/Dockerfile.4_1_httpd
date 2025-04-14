@@ -1,0 +1,41 @@
+FROM registry.access.redhat.com/ubi9/ubi
+
+# 필수 패키지 설치 및 클린업
+RUN dnf install -y httpd && \
+    dnf clean all
+
+# 환경변수 (기본 포트와 루트 디렉토리)
+ENV APP_PORT=8080 \
+    APP_ROOT=/var/www/html \
+    APP_USER=1001
+
+# 로그 파일 symlink
+RUN ln -sf /dev/stdout /var/log/httpd/access_log && \
+    ln -sf /dev/stderr /var/log/httpd/error_log
+
+# 권한 설정 (컨테이너 사용자 호환)
+RUN chgrp -R 0 /var/log/httpd /var/run/httpd /etc/httpd && \
+    chmod -R g=u /var/log/httpd /var/run/httpd /etc/httpd
+
+# index.html 복사
+COPY index.html ${APP_ROOT}/index.html
+
+# 동적 포트 적용을 위한 entrypoint 스크립트 복사
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# LABEL 정의 (설명)
+LABEL name="Apache Static Server" \
+      maintainer="yourname@example.com" \
+      description="Apache httpd running on UBI9 with dynamic port support" \
+      summary="Serves static content from /var/www/html" \
+      version="1.0"
+
+VOLUME ${APP_ROOT}
+
+EXPOSE ${APP_PORT}
+
+USER ${APP_USER}
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["-D", "FOREGROUND"]

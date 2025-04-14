@@ -1,0 +1,32 @@
+version: "3.9"
+services:
+  mysql:
+    image: quay.io/apollo11plus/do_test/mysql:latest
+    container_name: mysql
+    networks:
+      - appnet
+
+  fastapi:
+    image: quay.io/apollo11plus/do_test/fastapi:latest
+    container_name: fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=testuser
+      - DB_PASS=testpass
+      - DB_NAME=testdb
+    networks:
+      - appnet
+
+  nextjs:
+    image: quay.io/apollo11plus/do_test/nextjs:latest
+    container_name: nextjs
+    ports:
+      - "3000:3000"
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
